@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>География инфекционных заболеваний</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+        .controls {
+            background: #ecf0f1;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        button {
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button.active {
+            background: #e74c3c;
+        }
+        #map {
+            width: 100%;
+            height: calc(100vh - 120px);
+        }
+        .info {
+            padding: 15px;
+            background: #f9f9f9;
+        }
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>География инфекционных заболеваний</h1>
+    </header>
+
+    <div class="controls">
+        <button class="active" onclick="showDisease('malaria')">Малярия</button>
+        <button onclick="showDisease('hiv')">ВИЧ/СПИД</button>
+        <button onclick="showDisease('tuberculosis')">Туберкулёз</button>
+        <button onclick="showDisease('cholera')">Холера</button>
+        <button onclick="showDisease('dengue')">Лихорадка Денге</button>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="info">
+        <h2>Инструкция:</h2>
+        <p>Выберите заболевание из меню выше. На карте будут показаны зоны с высоким уровнем заболеваемости.</p>
+        <p>Цвета обозначают уровень распространения: <span style="color:#ff0000;">красный</span> - очень высокий, <span style="color:#ff9900;">оранжевый</span> - высокий, <span style="color:#ffff00;">жёлтый</span> - средний.</p>
+    </div>
+
+    <footer>
+        <!-- Здесь был удалён текст об исполнителе -->
+    </footer>
+
+    <script>
+        // Инициализация карты
+        let map;
+        let markers = [];
+        
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 20, lng: 0 },
+                zoom: 2,
+                styles: [
+                    {
+                        featureType: "poi",
+                        stylers: [{ visibility: "off" }]
+                    }
+                ]
+            });
+            
+            // Показываем малярию по умолчанию
+            showDisease('malaria');
+        }
+        
+        // Данные по заболеваниям (координаты и интенсивность)
+        const diseaseData = {
+            malaria: {
+                name: "Малярия",
+                description: "Тропическое заболевание, передающееся через укусы комаров",
+                zones: [
+                    {lat: 6.3690, lng: 20.3982, intensity: 3}, // Центральная Африка
+                    {lat: 12.2383, lng: -1.5616, intensity: 3}, // Буркина-Фасо
+                    {lat: 9.1450, lng: 40.4897, intensity: 2},  // Эфиопия
+                    {lat: 7.9465, lng: -1.0232, intensity: 2},  // Гана
+                    {lat: 18.7357, lng: -70.1627, intensity: 1} // Гаити
+                ]
+            },
+            hiv: {
+                name: "ВИЧ/СПИД",
+                description: "Вирус иммунодефицита человека",
+                zones: [
+                    {lat: -26.5225, lng: 31.4659, intensity: 3}, // Свазиленд
+                    {lat: -29.6099, lng: 28.2336, intensity: 3},   // Лесото
+                    {lat: -22.9576, lng: 18.4904, intensity: 2},  // Намибия
+                    {lat: -17.8739, lng: 31.0947, intensity: 2},   // Зимбабве
+                    {lat: 1.3733, lng: 32.2903, intensity: 1}      // Уганда
+                ]
+            },
+            tuberculosis: {
+                name: "Туберкулёз",
+                description: "Бактериальная инфекция лёгких",
+                zones: [
+                    {lat: -25.7463, lng: 28.1881, intensity: 3},  // ЮАР
+                    {lat: -15.4067, lng: 28.2871, intensity: 2},   // Замбия
+                    {lat: -18.6657, lng: 35.5296, intensity: 2},   // Мозамбик
+                    {lat: 55.3781, lng: -3.4360, intensity: 1},    // Великобритания
+                    {lat: 61.5240, lng: 105.3188, intensity: 1}    // Россия
+                ]
+            },
+            cholera: {
+                name: "Холера",
+                description: "Острая кишечная инфекция",
+                zones: [
+                    {lat: 18.9712, lng: -72.2852, intensity: 3},  // Гаити
+                    {lat: 15.5527, lng: 48.5164, intensity: 2},    // Йемен
+                    {lat: 9.1450, lng: 40.4897, intensity: 1},     // Эфиопия
+                    {lat: 23.6850, lng: 90.3563, intensity: 1}     // Бангладеш
+                ]
+            },
+            dengue: {
+                name: "Лихорадка Денге",
+                description: "Тропическая болезнь, переносимая комарами",
+                zones: [
+                    {lat: -14.2350, lng: -51.9253, intensity: 2}, // Бразилия
+                    {lat: 12.8797, lng: 121.7740, intensity: 2},  // Филиппины
+                    {lat: 7.8731, lng: 80.7718, intensity: 1},     // Шри-Ланка
+                    {lat: 21.9162, lng: 95.9560, intensity: 1}     // Мьянма
+                ]
+            }
+        };
+        
+        // Показать выбранное заболевание на карте
+        function showDisease(disease) {
+            // Удаляем предыдущие маркеры
+            clearMarkers();
+            
+            // Устанавливаем активную кнопку
+            document.querySelectorAll('.controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Получаем данные по заболеванию
+            const data = diseaseData[disease];
+            
+            // Добавляем новые маркеры
+            data.zones.forEach(zone => {
+                let color;
+                if (zone.intensity === 3) color = 'ff0000'; // красный
+                else if (zone.intensity === 2) color = 'ff9900'; // оранжевый
+                else color = 'ffff00'; // жёлтый
+                
+                const marker = new google.maps.Marker({
+                    position: { lat: zone.lat, lng: zone.lng },
+                    map: map,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        fillColor: `#${color}`,
+                        fillOpacity: 0.7,
+                        strokeWeight: 0,
+                        scale: 10
+                    },
+                    title: `${data.name} (${getIntensityText(zone.intensity)})`
+                });
+                
+                markers.push(marker);
+            });
+            
+            // Центрируем карту на первом маркере
+            if (data.zones.length > 0) {
+                map.setCenter({ lat: data.zones[0].lat, lng: data.zones[0].lng });
+                map.setZoom(4);
+            }
+            
+            // Обновляем информацию
+            document.querySelector('.info h2').textContent = data.name;
+            document.querySelector('.info p').textContent = data.description;
+        }
+        
+        // Очистка маркеров
+        function clearMarkers() {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+        }
+        
+        // Текст для интенсивности
+        function getIntensityText(intensity) {
+            if (intensity === 3) return "очень высокий";
+            if (intensity === 2) return "высокий";
+            return "средний";
+        }
+    </script>
+    
+    <!-- Подключаем Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB41DRUbKWJHPxaFjMAwdrzWzbVKartNGg&callback=initMap" async defer></script>
+</body>
+</html>
